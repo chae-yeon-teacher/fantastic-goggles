@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>장애 유형별 인구수 인포그래픽</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0fdf4; /* 아주 연한 녹색 배경 */
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            overflow-x: hidden; /* 가로 스크롤 방지 */
+        }
+        h1 {
+            color: #28a745; /* 초록색 강조 */
+            margin-bottom: 20px;
+            font-weight: 900; /* 더 굵은 글씨 */
+            text-align: center;
+            font-size: 2.2em;
+            letter-spacing: -0.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .intro-text {
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 40px;
+            color: #555;
+            max-width: 800px;
+            padding: 0 15px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column; /* 기본은 세로 배열 */
+            gap: 30px;
+            width: 100%;
+            max-width: 1100px; /* 전체 컨테이너 최대 너비 */
+            align-items: center;
+        }
+        .chart-area {
+            flex: 2; /* 차트 영역이 더 넓게 */
+            background-color: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            min-height: 550px; /* 차트 영역 최소 높이 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .chart-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #1a7e3d; /* 차트 제목 색상 */
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .chart-description {
+            font-size: 0.95em;
+            text-align: center;
+            color: #777;
+            margin-bottom: 25px;
+        }
+        #populationChart {
+            width: 100% !important; /* Chart.js 캔버스 너비 조정 */
+            height: 450px !important; /* Chart.js 캔버스 높이 고정 */
+        }
+
+        .info-box {
+            flex: 1; /* 정보 박스 영역 */
+            background-color: #e6ffee; /* 연한 녹색 배경 */
+            border: 2px solid #66bb6a; /* 테두리 강조 */
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+        }
+        .info-box.hidden {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .info-box-title {
+            font-size: 1.6em;
+            font-weight: 900;
+            color: #1a7e3d;
+            margin-bottom: 10px;
+        }
+        .info-box-percentage {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #ff5722; /* 주황색 강조 */
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .info-box-description {
+            font-size: 1.1em;
+            color: #333;
+            line-height: 1.8;
+            max-width: 350px;
+        }
+        .default-info {
+            font-size: 1.2em;
+            color: #777;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .source-info {
+            font-size: 0.85em;
+            text-align: center;
+            margin-top: 40px;
+            color: #888;
+            padding: 0 15px;
+        }
+
+        /* 미디어 쿼리: 화면이 넓어지면 가로 배열 */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                align-items: flex-start; /* 상단 정렬 */
+            }
+            .chart-area {
+                padding: 35px;
+            }
+            .info-box {
+                min-height: 550px; /* 차트와 높이 맞추기 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ 우리나라 장애 유형별 인구수, 인포그래픽으로 만나봐요! ✨</h1>
+    <p class="intro-text">
+        우리나라에는 다양한 유형의 장애를 가진 분들이 함께 살아가고 있어요.
+        2023년 말 기준으로 등록된 장애인 분들이 어떤 유형의 장애를 가지고 계신지,
+        막대그래프를 통해 한눈에 알아보고, 궁금한 유형을 눌러 자세히 알아봐요!
+    </p>
+
+    <div class="container">
+        <div class="chart-area">
+            <p class="chart-title">2023년 말 기준 등록장애인 유형별 현황 (총 2,641,896명)</p>
+            <p class="chart-description">
+                막대에 마우스를 올리거나 터치하면 자세한 설명을 볼 수 있어요!
+            </p>
+            <canvas id="populationChart"></canvas>
+        </div>
+
+        <div class="info-box" id="infoBox">
+            <p class="default-info">궁금한 장애 유형의 막대에 <br>마우스를 올리거나 터치해 보세요!</p>
+            <!-- 동적으로 내용이 채워질 부분 -->
+        </div>
+    </div>
+
+    <p class="source-info">자료 출처: 보건복지부 (2024.04.18 발표) - 2023년도 등록장애인 현황 통계 보도자료</p>
+
+    <script>
+        const ctx = document.getElementById('populationChart').getContext('2d');
+        const infoBox = document.getElementById('infoBox');
+
+        const labels = [
+            '지체장애', '청각장애', '시각장애', '뇌병변장애', '지적장애', '신장장애', '정신장애',
+            '자폐성장애', '언어장애', '장루·요루장애', '간장애', '호흡기장애', '뇌전증장애',
+            '심장장애', '안면장애'
+        ];
+
+        const dataValues = [
+            43.7, 16.4, 9.4, 9.1, 8.7, 4.1, 3.9, 1.6, 0.9, 0.6, 0.6, 0.4, 0.3, 0.2, 0.1
+        ];
+
+        // 각 장애 유형에 대한 초등학생 눈높이 설명
+        const disabilityDescriptions = {
+            '지체장애': '몸을 움직이는 데 어려움이 있어요. 휠체어를 사용하거나 보조 기구를 이용하기도 해요.',
+            '청각장애': '소리를 듣는 데 어려움이 있어요. 수어나 보청기로 소통하기도 해요.',
+            '시각장애': '눈으로 보는 데 어려움이 있어요. 흰 지팡이나 안내견과 함께 다니기도 해요.',
+            '뇌병변장애': '뇌 손상으로 몸을 움직이는 데 어려움이 있어요. 재활 치료로 꾸준히 노력해요.',
+            '지적장애': '생각하고 배우는 데 시간이 더 필요해요. 꾸준한 관심과 지지로 잘 성장할 수 있어요.',
+            '신장장애': '콩팥(신장) 기능이 약해 치료가 필요해요. 건강한 생활을 위해 노력해요.',
+            '정신장애': '마음이 힘들어서 전문가의 도움이 필요해요. 따뜻한 격려가 큰 힘이 돼요.',
+            '자폐성장애': '다른 사람들과 소통하거나 어울리는 방식이 특별해요. 각자의 재능을 꽃피울 수 있어요.',
+            '언어장애': '말하거나 글을 쓰는 데 어려움이 있어요. 여러 방법으로 소통을 배우고 있어요.',
+            '장루·요루장애': '몸 안에 작은 주머니를 달아 생활해요. 아픈 곳을 잘 관리하며 지내요.',
+            '간장애': '간 기능이 좋지 않아 치료가 필요해요. 꾸준한 관리가 중요해요.',
+            '호흡기장애': '숨 쉬는 데 어려움이 있어요. 기관지 확장제나 산소 공급 장치를 사용하기도 해요.',
+            '뇌전증장애': '뇌의 전기 신호 문제로 발작이 생길 수 있어요. 꾸준한 약 복용으로 조절 가능해요.',
+            '심장장애': '심장 기능이 약해 관리가 필요해요. 건강한 심장을 위해 노력해요.',
+            '안면장애': '얼굴의 일부에 변형이 있어요. 있는 그대로의 모습으로 인정하고 존중해요.'
+        };
+
+        const backgroundColors = [
+            'rgba(255, 159, 64, 0.8)',  // 주황
+            'rgba(54, 162, 235, 0.8)',  // 파랑
+            'rgba(255, 99, 132, 0.8)',  // 빨강
+            'rgba(75, 192, 192, 0.8)',  // 청록
+            'rgba(153, 102, 255, 0.8)', // 보라
+            'rgba(255, 205, 86, 0.8)',  // 노랑
+            'rgba(201, 203, 207, 0.8)', // 회색
+            'rgba(0, 150, 136, 0.8)',   // 진한 청록
+            'rgba(121, 85, 72, 0.8)',   // 갈색
+            'rgba(233, 30, 99, 0.8)',   // 분홍
+            'rgba(63, 81, 181, 0.8)',   // 인디고
+            'rgba(139, 195, 74, 0.8)',  // 연두
+            'rgba(255, 87, 34, 0.8)',   // 오렌지
+            'rgba(96, 125, 139, 0.8)',  // 파란 회색
+            'rgba(244, 67, 54, 0.8)'    // 빨강
+        ];
+
+        const borderColors = backgroundColors.map(color => color.replace('0.8', '1')); // 테두리는 더 진하게
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '비율 (%)',
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1,
+                    borderRadius: 5, /* 막대 끝을 둥글게 */
+                }]
+            },
+            options: {
+                indexAxis: 'y', // 막대를 가로로 눕히기
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false, // Chart.js 기본 툴팁 비활성화
+                        external: function(context) {
+                            // 커스텀 툴팁 로직
+                            const tooltipModel = context.tooltip;
+                            if (tooltipModel.opacity === 0) {
+                                infoBox.classList.add('hidden');
+                                infoBox.innerHTML = '<p class="default-info">궁금한 장애 유형의 막대에 <br>마우스를 올리거나 터치해 보세요!</p>';
+                                return;
+                            }
+
+                            if (tooltipModel.body) {
+                                const dataIndex = tooltipModel.dataPoints[0].dataIndex;
+                                const disabilityType = labels[dataIndex];
+                                const percentage = dataValues[dataIndex];
+                                const description = disabilityDescriptions[disabilityType];
+
+                                infoBox.classList.remove('hidden');
+                                infoBox.innerHTML = `
+                                    <p class="info-box-title">${disabilityType}</p>
+                                    <p class="info-box-percentage">${percentage}%</p>
+                                    <p class="info-box-description">${description}</p>
+                                `;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '비율 (%)',
+                            font: {
+                                family: 'Noto Sans KR',
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Noto Sans KR',
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return value + '%'; // x축 값 뒤에 % 붙이기
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        max: 50 // X축 최대값을 50% 정도로 설정하여 시각적 강조
+                    },
+                    y: {
+                        title: {
+                            display: false, /* y축 제목 숨김 */
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Noto Sans KR',
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            display: false /* Y축 그리드 라인 제거 */
+                        }
+                    }
+                },
+                onHover: (event, chartElements) => {
+                    // 터치 기기 대응을 위해 onHover에서도 툴팁 업데이트 로직 실행
+                    // (Chart.js의 external 툴팁이 터치에서 바로 작동하지 않을 수 있음)
+                    if (chartElements.length > 0) {
+                        const firstElement = chartElements[0];
+                        const dataIndex = firstElement.index;
+                        const disabilityType = labels[dataIndex];
+                        const percentage = dataValues[dataIndex];
+                        const description = disabilityDescriptions[disabilityType];
+
+                        infoBox.classList.remove('hidden');
+                        infoBox.innerHTML = `
+                            <p class="info-box-title">${disabilityType}</p>
+                            <p class="info-box-percentage">${percentage}%</p>
+                            <p class="info-box-description">${description}</p>
+                        `;
+                    } else {
+                        infoBox.classList.add('hidden');
+                        infoBox.innerHTML = '<p class="default-info">궁금한 장애 유형의 막대에 <br>마우스를 올리거나 터치해 보세요!</p>';
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
